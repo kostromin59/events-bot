@@ -1,8 +1,8 @@
 import { Bot, session } from "grammy";
 import { prisma } from "../database";
 import { BotContext, SessionData } from "./context";
-import { Actions, Messages } from "../utils";
-import { skipPhoneMenu } from "./menu";
+import { SessionActions, Messages, Actions } from "../utils";
+import { baseMenu, skipPhoneMenu } from "./menu";
 
 export class TelegramBot {
   private readonly bot: Bot<BotContext>;
@@ -42,24 +42,25 @@ export class TelegramBot {
 
       // Спросить ФИО
       if (!user) {
-        ctx.session.action = Actions.WAITING_FOR_NAME;
+        ctx.session.action = SessionActions.WAITING_FOR_NAME;
         return await ctx.reply("Перед началом работы бота введите ФИО");
       }
 
+      // Спросить телефон
       if (!user.phone) {
-        ctx.session.action = Actions.WAITING_FOR_PHONE;
+        ctx.session.action = SessionActions.WAITING_FOR_PHONE;
         return await ctx.reply("Укажите телефон для связи", {
           reply_markup: skipPhoneMenu,
         });
       }
 
-      // TODO: Вывод меню
+      await ctx.reply("Вам доступно меню!", { reply_markup: baseMenu });
     });
 
     this.bot.on("message:text", async (ctx) => {
       switch (ctx.session.action) {
         // Сохранить ФИО
-        case Actions.WAITING_FOR_NAME:
+        case SessionActions.WAITING_FOR_NAME:
           await prisma.user.create({
             data: {
               telegramId: ctx.from.id.toString(),
@@ -68,7 +69,7 @@ export class TelegramBot {
           });
 
           // Спросить телефон
-          ctx.session.action = Actions.WAITING_FOR_PHONE;
+          ctx.session.action = SessionActions.WAITING_FOR_PHONE;
           await ctx.reply("Укажите телефон для связи", {
             reply_markup: skipPhoneMenu,
           });
@@ -76,7 +77,7 @@ export class TelegramBot {
           return;
 
         // Сохранить телефон
-        case Actions.WAITING_FOR_PHONE:
+        case SessionActions.WAITING_FOR_PHONE:
           const user = await prisma.user.findUnique({
             where: {
               telegramId: ctx.from.id.toString(),
@@ -92,9 +93,34 @@ export class TelegramBot {
             data: { phone: ctx.message.text },
           });
 
-          // TODO: Отправить меню
-          await ctx.reply("ok");
+          await ctx.reply("Вам доступно меню!", { reply_markup: baseMenu });
           return;
+      }
+
+      // Обработать пользовательские нажатия
+      if (ctx.message.text === Actions.SHOW_EVENTS) {
+        const events = await prisma.event.findMany();
+
+        const message = events.reduce((acc, event, index) => {
+          acc += `<b>${index + 1}) ${event.name}</b> `;
+          acc += `(${new Intl.DateTimeFormat("ru-RU", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(event.date)})\n`;
+          acc += `${event.description}\n\n`;
+
+          return acc;
+        }, "Список мероприятий:\n");
+
+        return ctx.reply(message, {
+          parse_mode: "HTML",
+          reply_markup: baseMenu,
+        });
+      } else if (ctx.message.text === Actions.REGISTER_TO_EVENT) {
+        return ctx.reply("reg", { reply_markup: baseMenu });
       }
     });
 

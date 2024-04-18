@@ -1,8 +1,8 @@
 import { Context, SessionFlavor } from "grammy";
-import { Actions } from "../utils";
+import { SessionActions } from "../utils";
 
 export type SessionData = {
-  action?: Actions;
+  action?: SessionActions;
 };
 
 export type BotContext = Context & SessionFlavor<SessionData>;
