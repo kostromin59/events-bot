@@ -1,8 +1,20 @@
-import { prisma } from "./database";
+import { TelegramBot } from "./telegram";
+import { Config } from "./utils";
 
-async function main() {
-  const events = await prisma.event.findMany();
-  console.log(events);
+class App {
+  private readonly telegramBot: TelegramBot;
+
+  constructor() {
+    const config = new Config();
+    const telegramBot = new TelegramBot(config.token);
+
+    this.telegramBot = telegramBot;
+  }
+
+  start() {
+    this.telegramBot.start();
+  }
 }
 
-main();
+const app = new App();
+app.start();
