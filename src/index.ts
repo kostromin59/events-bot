@@ -1,10 +1,8 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "./database";
 
 async function main() {
-  const users = await prisma.event.findMany();
-  console.log(users);
+  const events = await prisma.event.findMany();
+  console.log(events);
 }
 
 main();
