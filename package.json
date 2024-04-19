@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "npm run migrate && npm run events && node dist/index.js",
     "build": "npx tsc",
     "dev": "npx tsc && node dist/index.js",
-    "events": "node dist/insert-events.js"
+    "events": "node dist/insert-events.js",
+    "migrate": "prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
