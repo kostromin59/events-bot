@@ -1,6 +1,14 @@
-import { Bot, GrammyError, HttpError, InlineKeyboard, session } from "grammy";
+import {
+  Bot,
+  GrammyError,
+  HttpError,
+  InlineKeyboard,
+  InputFile,
+  session,
+} from "grammy";
 import { prisma } from "../database";
 import { BotContext, SessionData } from "./context";
+import xlsx from "xlsx";
 import {
   SessionActions,
   Messages,
@@ -14,6 +22,7 @@ import {
   showRegisteredEventsMenu,
   skipPhoneMenu,
 } from "./menu";
+import { Readable } from "stream";
 
 export class TelegramBot {
   private readonly bot: Bot<BotContext>;
@@ -81,21 +90,57 @@ export class TelegramBot {
       })
       .filter((ctx) => this.isAdmin(ctx.from?.id));
 
-    this.bot.hears(AdminsActions.SHOW_STATISTICS, async (ctx) => {
+    this.bot
+      .hears(AdminsActions.SHOW_STATISTICS, async (ctx) => {
+        const events = await prisma.event.findMany({
+          select: {
+            name: true,
+            UserEvent: {
+              select: { id: true },
+            },
+          },
+        });
+        const message = events.reduce((acc, event) => {
+          acc += `${event.name}: ${event.UserEvent.length}\n`;
+          return acc;
+        }, "Статистика:\n");
+
+        await ctx.reply(message, { reply_markup: adminsMenu });
+      })
+      .filter((ctx) => this.isAdmin(ctx.from?.id));
+
+    this.bot.hears(AdminsActions.GENERATE_EXCEL, async (ctx) => {
       const events = await prisma.event.findMany({
-        select: {
-          name: true,
+        include: {
           UserEvent: {
-            select: { id: true },
+            include: {
+              user: true,
+            },
           },
         },
       });
-      const message = events.reduce((acc, event) => {
-        acc += `${event.name}: ${event.UserEvent.length}\n`;
-        return acc;
-      }, "Статистика:\n");
 
-      await ctx.reply(message, { reply_markup: adminsMenu });
+      const workbook = xlsx.utils.book_new();
+
+      events.forEach((event, index) => {
+        const worksheet = xlsx.utils.aoa_to_sheet([
+          [event.name],
+          ["ФИО", "Телефон", "Посетил"],
+        ]);
+
+        const userData = event.UserEvent.map((userEvent) => [
+          userEvent.user.fio,
+          userEvent.user.phone,
+        ]);
+
+        xlsx.utils.sheet_add_aoa(worksheet, userData, { origin: 2 });
+        xlsx.utils.book_append_sheet(workbook, worksheet, index.toString());
+      });
+
+      const buffer = xlsx.write(workbook, { type: "buffer" });
+      const stream = Readable.from(buffer);
+
+      await ctx.replyWithDocument(new InputFile(stream, "sheet.xlsx"));
     });
   }
 
