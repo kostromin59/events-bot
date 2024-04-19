@@ -79,17 +79,42 @@ export class TelegramBot {
       if (!ctx.from?.id) throw new Error("Id not found");
       ctx.reply(ctx.from.id.toString());
     });
-  }
 
-  private bindAdminEvents() {
-    this.bot
-      .command("start", async (ctx) => {
+    this.bot.command("start", async (ctx) => {
+      const id = ctx.from?.id;
+      if (!id) throw new Error("Id not found");
+
+      if (this.isAdmin(id)) {
         return await ctx.reply(Messages.MENU_ACCESS, {
           reply_markup: adminsMenu,
         });
-      })
-      .filter((ctx) => this.isAdmin(ctx.from?.id));
+      }
 
+      const user = await prisma.user.findUnique({
+        where: {
+          telegramId: id.toString(),
+        },
+      });
+
+      // Спросить ФИО
+      if (!user) {
+        ctx.session.action = SessionActions.WAITING_FOR_NAME;
+        return await ctx.reply(Messages.NEED_NAME);
+      }
+
+      // Спросить телефон
+      if (!user.phone) {
+        ctx.session.action = SessionActions.WAITING_FOR_PHONE;
+        return await ctx.reply(Messages.NEED_PHONE, {
+          reply_markup: skipPhoneMenu,
+        });
+      }
+
+      await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
+    });
+  }
+
+  private bindAdminEvents() {
     this.bot
       .hears(AdminsActions.SHOW_STATISTICS, async (ctx) => {
         const events = await prisma.event.findMany({
@@ -109,71 +134,44 @@ export class TelegramBot {
       })
       .filter((ctx) => this.isAdmin(ctx.from?.id));
 
-    this.bot.hears(AdminsActions.GENERATE_EXCEL, async (ctx) => {
-      const events = await prisma.event.findMany({
-        include: {
-          UserEvent: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      });
-
-      const workbook = xlsx.utils.book_new();
-
-      events.forEach((event, index) => {
-        const worksheet = xlsx.utils.aoa_to_sheet([
-          [event.name],
-          ["ФИО", "Телефон", "Посетил"],
-        ]);
-
-        const userData = event.UserEvent.map((userEvent) => [
-          userEvent.user.fio,
-          userEvent.user.phone,
-        ]);
-
-        xlsx.utils.sheet_add_aoa(worksheet, userData, { origin: 2 });
-        xlsx.utils.book_append_sheet(workbook, worksheet, index.toString());
-      });
-
-      const buffer = xlsx.write(workbook, { type: "buffer" });
-      const stream = Readable.from(buffer);
-
-      await ctx.replyWithDocument(new InputFile(stream, "sheet.xlsx"));
-    });
-  }
-
-  private bindUserEvents() {
     this.bot
-      .command("start", async (ctx) => {
-        const id = ctx.from?.id;
-        if (!id) throw new Error("Id not found");
-
-        const user = await prisma.user.findUnique({
-          where: {
-            telegramId: id.toString(),
+      .hears(AdminsActions.GENERATE_EXCEL, async (ctx) => {
+        const events = await prisma.event.findMany({
+          include: {
+            UserEvent: {
+              include: {
+                user: true,
+              },
+            },
           },
         });
 
-        // Спросить ФИО
-        if (!user) {
-          ctx.session.action = SessionActions.WAITING_FOR_NAME;
-          return await ctx.reply(Messages.NEED_NAME);
-        }
+        const workbook = xlsx.utils.book_new();
 
-        // Спросить телефон
-        if (!user.phone) {
-          ctx.session.action = SessionActions.WAITING_FOR_PHONE;
-          return await ctx.reply(Messages.NEED_PHONE, {
-            reply_markup: skipPhoneMenu,
-          });
-        }
+        events.forEach((event, index) => {
+          const worksheet = xlsx.utils.aoa_to_sheet([
+            [event.name],
+            ["ФИО", "Телефон", "Посетил"],
+          ]);
 
-        await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
+          const userData = event.UserEvent.map((userEvent) => [
+            userEvent.user.fio,
+            userEvent.user.phone,
+          ]);
+
+          xlsx.utils.sheet_add_aoa(worksheet, userData, { origin: 2 });
+          xlsx.utils.book_append_sheet(workbook, worksheet, index.toString());
+        });
+
+        const buffer = xlsx.write(workbook, { type: "buffer" });
+        const stream = Readable.from(buffer);
+
+        await ctx.replyWithDocument(new InputFile(stream, "sheet.xlsx"));
       })
-      .filter((ctx) => this.filterAdmins(ctx.from?.id));
+      .filter((ctx) => this.isAdmin(ctx.from?.id));
+  }
 
+  private bindUserEvents() {
     this.bot
       .hears(Actions.SHOW_EVENTS, async (ctx) => {
         const events = await prisma.event.findMany();
