@@ -6,7 +6,7 @@ class App {
 
   constructor() {
     const config = new Config();
-    const telegramBot = new TelegramBot(config.token);
+    const telegramBot = new TelegramBot(config.token, config.admins);
 
     this.telegramBot = telegramBot;
   }
