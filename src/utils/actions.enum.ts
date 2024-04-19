@@ -3,9 +3,13 @@ export const enum SessionActions {
   WAITING_FOR_PHONE,
 }
 
-export enum Actions {
-  // TODO: Здесь добавить кнопку посмотреть на какие записан
+export const enum Actions {
   SHOW_EVENTS = "Мероприятия",
   REGISTER_TO_EVENT = "Записаться",
   SELECTED_EVENT = "SELECTED_EVENT",
+}
+
+export const enum AdminsActions {
+  SHOW_STATISTICS = "Статистика",
+  GENERATE_EXCEL = "Таблицы",
 }

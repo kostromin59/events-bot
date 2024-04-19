@@ -1,8 +1,19 @@
 import { Bot, GrammyError, HttpError, InlineKeyboard, session } from "grammy";
 import { prisma } from "../database";
 import { BotContext, SessionData } from "./context";
-import { SessionActions, Messages, Actions, DateFormat } from "../utils";
-import { baseMenu, showRegisteredEventsMenu, skipPhoneMenu } from "./menu";
+import {
+  SessionActions,
+  Messages,
+  Actions,
+  DateFormat,
+  AdminsActions,
+} from "../utils";
+import {
+  adminsMenu,
+  baseMenu,
+  showRegisteredEventsMenu,
+  skipPhoneMenu,
+} from "./menu";
 
 export class TelegramBot {
   private readonly bot: Bot<BotContext>;
@@ -41,6 +52,7 @@ export class TelegramBot {
     });
 
     this.bindCommands();
+    this.bindAdminEvents();
     this.bindUserEvents();
   }
 
@@ -57,6 +69,33 @@ export class TelegramBot {
     this.bot.command("id", (ctx) => {
       if (!ctx.from?.id) throw new Error("Id not found");
       ctx.reply(ctx.from.id.toString());
+    });
+  }
+
+  private bindAdminEvents() {
+    this.bot
+      .command("start", async (ctx) => {
+        return await ctx.reply(Messages.MENU_ACCESS, {
+          reply_markup: adminsMenu,
+        });
+      })
+      .filter((ctx) => this.isAdmin(ctx.from?.id));
+
+    this.bot.hears(AdminsActions.SHOW_STATISTICS, async (ctx) => {
+      const events = await prisma.event.findMany({
+        select: {
+          name: true,
+          UserEvent: {
+            select: { id: true },
+          },
+        },
+      });
+      const message = events.reduce((acc, event) => {
+        acc += `${event.name}: ${event.UserEvent.length}\n`;
+        return acc;
+      }, "Статистика:\n");
+
+      await ctx.reply(message, { reply_markup: adminsMenu });
     });
   }
 
@@ -205,8 +244,13 @@ export class TelegramBot {
       .filter((ctx) => this.filterAdmins(ctx.from.id));
   }
 
-  filterAdmins(id?: number): boolean {
+  private filterAdmins(id?: number): boolean {
     if (!id) return false;
     return !this.admins.includes(id);
+  }
+
+  private isAdmin(id?: number): boolean {
+    if (!id) return false;
+    return this.admins.includes(id);
   }
 }

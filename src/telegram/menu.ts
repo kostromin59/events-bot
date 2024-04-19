@@ -1,12 +1,17 @@
 import { Keyboard } from "grammy";
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "./context";
-import { Actions, DateFormat, Messages } from "../utils";
+import { Actions, AdminsActions, DateFormat, Messages } from "../utils";
 import { prisma } from "../database";
 
 export const baseMenu = new Keyboard()
   .text(Actions.SHOW_EVENTS)
   .text(Actions.REGISTER_TO_EVENT)
+  .resized();
+
+export const adminsMenu = new Keyboard()
+  .text(AdminsActions.SHOW_STATISTICS)
+  .text(AdminsActions.GENERATE_EXCEL)
   .resized();
 
 export const skipPhoneMenu = new Menu<BotContext>("skipPhoneMenu").text(
