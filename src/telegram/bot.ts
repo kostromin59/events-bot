@@ -296,4 +296,45 @@ export class TelegramBot {
     if (!id) return false;
     return this.admins.includes(id);
   }
+
+  public async notify() {
+    const now = new Date(Date.now());
+
+    // Не выполнять функцию до 17 часов
+    if (now.getHours() < 17) {
+      return;
+    }
+
+    const events = await prisma.userEvent.findMany({
+      where: {
+        isNotified: false,
+        event: {
+          date: {
+            // 31 час, потому что нужно за весь следующий день, а проверка начинается с 17 часов
+            lt: new Date(now.getTime() + 1000 * 60 * 60 * 31),
+            gt: now,
+          },
+        },
+      },
+      include: {
+        event: true,
+        user: true,
+      },
+    });
+
+    events.forEach(async (event) => {
+      await this.bot.api.sendMessage(
+        event.user.telegramId,
+        `Вы записаны на мероприятие "${event.event.name}", которое будет проходить ${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.event.date)}. Ждём вас!`,
+      );
+      await prisma.userEvent.update({
+        where: {
+          id: event.id,
+        },
+        data: {
+          isNotified: true,
+        },
+      });
+    });
+  }
 }
