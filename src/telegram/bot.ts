@@ -15,12 +15,13 @@ import {
   Actions,
   DateFormat,
   AdminsActions,
+  phoneMask,
 } from "../utils";
 import {
   adminsMenu,
   baseMenu,
+  sendContactMenu,
   showRegisteredEventsMenu,
-  skipPhoneMenu,
 } from "./menu";
 import { Readable } from "stream";
 
@@ -43,7 +44,7 @@ export class TelegramBot {
       }),
     );
 
-    bot.use(skipPhoneMenu);
+    // bot.use(skipPhoneMenu);
     bot.use(showRegisteredEventsMenu);
 
     this.bot.catch((err) => {
@@ -106,7 +107,7 @@ export class TelegramBot {
       if (!user.phone) {
         ctx.session.action = SessionActions.WAITING_FOR_PHONE;
         return await ctx.reply(Messages.NEED_PHONE, {
-          reply_markup: skipPhoneMenu,
+          reply_markup: sendContactMenu,
         });
       }
 
@@ -258,7 +259,7 @@ export class TelegramBot {
             // Спросить телефон
             ctx.session.action = SessionActions.WAITING_FOR_PHONE;
             await ctx.reply(Messages.NEED_PHONE, {
-              reply_markup: skipPhoneMenu,
+              reply_markup: sendContactMenu,
             });
 
             return;
@@ -275,16 +276,53 @@ export class TelegramBot {
               return await ctx.reply(Messages.USE_START);
             }
 
+            if (!phoneMask.test(ctx.message.text)) {
+              return await ctx.reply(Messages.INVALID_PHONE);
+            }
+
             await prisma.user.update({
               where: { id: user.id },
               data: { phone: ctx.message.text },
             });
 
+            ctx.session.action = undefined;
             await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
             return;
         }
       })
       .filter((ctx) => this.filterAdmins(ctx.from.id));
+
+    this.bot
+      .on(":contact", async (ctx) => {
+        if (ctx.session.action !== SessionActions.WAITING_FOR_PHONE) return;
+
+        if (!ctx.from?.id) {
+          throw new Error(Messages.ERROR);
+        }
+
+        const user = await prisma.user.findUnique({
+          where: {
+            telegramId: ctx.from.id.toString(),
+          },
+        });
+
+        if (!user) {
+          return await ctx.reply(Messages.USE_START);
+        }
+
+        if (!ctx.message?.contact) {
+          throw new Error(Messages.ERROR);
+        }
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { phone: ctx.message.contact.phone_number },
+        });
+
+        ctx.session.action = undefined;
+        await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
+      })
+      .filter((ctx) => this.filterAdmins(ctx.from?.id));
   }
 
   private filterAdmins(id?: number): boolean {

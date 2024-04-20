@@ -1,7 +1,7 @@
 import { Keyboard } from "grammy";
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "./context";
-import { Actions, AdminsActions, DateFormat, Messages } from "../utils";
+import { Actions, AdminsActions, DateFormat } from "../utils";
 import { prisma } from "../database";
 
 export const baseMenu = new Keyboard()
@@ -14,14 +14,19 @@ export const adminsMenu = new Keyboard()
   .text(AdminsActions.GENERATE_EXCEL)
   .resized();
 
-export const skipPhoneMenu = new Menu<BotContext>("skipPhoneMenu").text(
-  "Не указывать",
-  async (ctx) => {
-    ctx.session.action = undefined;
+// export const skipPhoneMenu = new Menu<BotContext>("skipPhoneMenu").text(
+//   "Не указывать",
+//   async (ctx) => {
+//     ctx.session.action = undefined;
+//
+//     await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
+//   },
+// );
 
-    await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
-  },
-);
+export const sendContactMenu = new Keyboard()
+  .requestContact("Отправить контакт")
+  .placeholder("Номер телефона")
+  .resized();
 
 export const showRegisteredEventsMenu = new Menu<BotContext>(
   "showRegisteredEvents",
