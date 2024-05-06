@@ -46,8 +46,8 @@ export const showRegisteredEventsMenu = new Menu<BotContext>(
     return await ctx.reply("Вы ещё никуда не записаны!");
   }
 
-  const message = events.reduce((acc, event) => {
-    acc += `- <b>${event.event.name}</b> (${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.event.date)})\n`;
+  const message = events.reduce((acc, event, index) => {
+    acc += `${index + 1}) <b>${event.event.name}</b> (${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.event.date)})\n`;
     return acc;
   }, "Вы записаны на:\n");
 
