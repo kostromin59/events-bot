@@ -126,8 +126,8 @@ export class TelegramBot {
             },
           },
         });
-        const message = events.reduce((acc, event) => {
-          acc += `${event.name}: ${event.UserEvent.length}\n`;
+        const message = events.reduce((acc, event, index) => {
+          acc += `${index + 1}) ${event.name}: ${event.UserEvent.length}\n`;
           return acc;
         }, "Статистика:\n");
 
