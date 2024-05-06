@@ -15,7 +15,7 @@ import {
   Actions,
   DateFormat,
   AdminsActions,
-  phoneMask,
+  phoneMasks,
 } from "../utils";
 import {
   adminsMenu,
@@ -280,7 +280,7 @@ export class TelegramBot {
               return await ctx.reply(Messages.USE_START);
             }
 
-            if (!phoneMask.test(ctx.message.text)) {
+            if (!phoneMasks.some((mask) => mask.test(ctx.message.text))) {
               return await ctx.reply(Messages.INVALID_PHONE);
             }
 
