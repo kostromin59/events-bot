@@ -177,7 +177,7 @@ export class TelegramBot {
       .hears(Actions.SHOW_EVENTS, async (ctx) => {
         const events = await prisma.event.findMany({
           orderBy: {
-            date: "desc"
+            date: "asc"
           }
         });
 
