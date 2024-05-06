@@ -14,6 +14,7 @@ services:
       - database:/var/lib/postgresql/data:Z
     networks: ["events_network"]
   app:
+    container_name: events-bot
     build:
       context: .
       dockerfile: Dockerfile
