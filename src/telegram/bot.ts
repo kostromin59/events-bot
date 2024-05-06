@@ -175,7 +175,11 @@ export class TelegramBot {
   private bindUserEvents() {
     this.bot
       .hears(Actions.SHOW_EVENTS, async (ctx) => {
-        const events = await prisma.event.findMany();
+        const events = await prisma.event.findMany({
+          orderBy: {
+            date: "desc"
+          }
+        });
 
         const message = events.reduce((acc, event, index) => {
           acc += `<b>${index + 1}) ${event.name}</b> `;
