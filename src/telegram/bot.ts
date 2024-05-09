@@ -199,7 +199,11 @@ export class TelegramBot {
     this.bot
       .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .hears(Actions.REGISTER_TO_EVENT, async (ctx) => {
-        const events = await prisma.event.findMany();
+        const events = await prisma.event.findMany({
+          orderBy: {
+            date: "asc"
+          }
+        });
         const menu = new InlineKeyboard();
 
         events.forEach((event) => {
