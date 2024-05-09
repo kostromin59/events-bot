@@ -243,8 +243,7 @@ export class TelegramBot {
           },
         });
 
-        await ctx.answerCallbackQuery(Messages.SUCCESS_REGISTER);
-        await ctx.reply(Messages.FIND_REGISTERED_EVENTS);
+        await ctx.answerCallbackQuery(Messages.FIND_REGISTERED_EVENTS);
       })
       .filter((ctx) => this.filterAdmins(ctx.from.id));
 
