@@ -117,6 +117,7 @@ export class TelegramBot {
 
   private bindAdminEvents() {
     this.bot
+      .filter((ctx) => {return this.isAdmin(ctx.from?.id)})
       .hears(AdminsActions.SHOW_STATISTICS, async (ctx) => {
         const events = await prisma.event.findMany({
           select: {
@@ -132,10 +133,10 @@ export class TelegramBot {
         }, "Статистика:\n");
 
         await ctx.reply(message, { reply_markup: adminsMenu });
-      })
-      .filter((ctx) => this.isAdmin(ctx.from?.id));
+      });
 
     this.bot
+      .filter((ctx) => this.isAdmin(ctx.from?.id))
       .hears(AdminsActions.GENERATE_EXCEL, async (ctx) => {
         const events = await prisma.event.findMany({
           include: {
@@ -169,11 +170,11 @@ export class TelegramBot {
 
         await ctx.replyWithDocument(new InputFile(stream, "sheet.xlsx"));
       })
-      .filter((ctx) => this.isAdmin(ctx.from?.id));
   }
 
   private bindUserEvents() {
     this.bot
+      .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .hears(Actions.SHOW_EVENTS, async (ctx) => {
         const events = await prisma.event.findMany({
           orderBy: {
@@ -193,10 +194,10 @@ export class TelegramBot {
           parse_mode: "HTML",
           reply_markup: showRegisteredEventsMenu,
         });
-      })
-      .filter((ctx) => this.filterAdmins(ctx.from?.id));
+      });
 
     this.bot
+      .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .hears(Actions.REGISTER_TO_EVENT, async (ctx) => {
         const events = await prisma.event.findMany();
         const menu = new InlineKeyboard();
@@ -206,10 +207,10 @@ export class TelegramBot {
         });
 
         await ctx.reply(Messages.SELECT_EVENTS, { reply_markup: menu });
-      })
-      .filter((ctx) => this.filterAdmins(ctx.from?.id));
+      });
 
     this.bot
+      .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .on("callback_query:data", async (ctx) => {
         if (!ctx.callbackQuery.data.startsWith(Actions.SELECTED_EVENT))
           throw new Error("Must be selected event");
@@ -244,10 +245,10 @@ export class TelegramBot {
         });
 
         await ctx.answerCallbackQuery(Messages.FIND_REGISTERED_EVENTS);
-      })
-      .filter((ctx) => this.filterAdmins(ctx.from.id));
+      });
 
     this.bot
+      .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .on("message:text", async (ctx) => {
         switch (ctx.session.action) {
           // Сохранить ФИО
@@ -292,10 +293,10 @@ export class TelegramBot {
             await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
             return;
         }
-      })
-      .filter((ctx) => this.filterAdmins(ctx.from.id));
+      });
 
     this.bot
+      .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .on(":contact", async (ctx) => {
         if (ctx.session.action !== SessionActions.WAITING_FOR_PHONE) return;
 
@@ -324,8 +325,7 @@ export class TelegramBot {
 
         ctx.session.action = undefined;
         await ctx.reply(Messages.MENU_ACCESS, { reply_markup: baseMenu });
-      })
-      .filter((ctx) => this.filterAdmins(ctx.from?.id));
+      });
   }
 
   private filterAdmins(id?: number): boolean {
