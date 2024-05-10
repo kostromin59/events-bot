@@ -23,6 +23,7 @@ import {
   sendContactMenu,
 } from "./menu";
 import { Readable } from "stream";
+import { Record } from "@prisma/client/runtime/library";
 
 export class TelegramBot {
   private readonly bot: Bot<BotContext>;
@@ -178,16 +179,52 @@ export class TelegramBot {
         const events = await prisma.event.findMany({
           orderBy: {
             date: "asc"
-          }
+          },
         });
 
-        const message = events.reduce((acc, event, index) => {
-          acc += `<b>${index + 1}) ${event.name}</b> `;
-          acc += `(${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.date)})\n`;
-          acc += `${event.description}\n\n`;
-
+        const eventsGroupedByDay = events.reduce((acc, event) => {
+          const date = event.date.toISOString().split('T')[0];
+          if (!acc[date]) {
+            acc[date] = []
+          }
+          acc[date].push(event)
           return acc;
-        }, "Список мероприятий:\n");
+        }, {} as Record<string, {
+          id: number;
+          name: string;
+          date: Date;
+          description: string;
+        }[]>);
+
+        const message = Object.entries(eventsGroupedByDay).reduce((acc, [date, events]) => {
+          acc += `<b>${new Intl.DateTimeFormat("ru-RU", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }).format(new Date(date))}</b>`
+
+          acc += "\n"
+
+          acc += events.reduce((acc, event) => {
+            acc += new Intl.DateTimeFormat("ru-RU", {
+              hour: "numeric",
+              minute: "numeric",
+              timeZone: "UTC"
+            }).format(event.date)
+
+            acc += ` - ${event.name}`
+            if (event.description.length) {
+              acc += `\n${event.description}`
+            }
+
+            acc += "\n\n"
+
+            return acc
+          }, "")
+
+
+          return acc
+        }, "")
 
         return ctx.reply(message, {
           parse_mode: "HTML",
@@ -220,10 +257,49 @@ export class TelegramBot {
           return await ctx.reply("Вы ещё никуда не записаны!");
         }
 
-        const message = events.reduce((acc, event, index) => {
-          acc += `${index + 1}) <b>${event.event.name}</b> (${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.event.date)})\n`;
+        const eventsGroupedByDay = events.reduce((acc, event) => {
+          const date = event.event.date.toISOString().split('T')[0];
+          if (!acc[date]) {
+            acc[date] = []
+          }
+          acc[date].push(event.event)
           return acc;
-        }, "Вы записаны на:\n");
+        }, {} as Record<string, {
+          id: number;
+          name: string;
+          date: Date;
+          description: string;
+        }[]>);
+
+        const message = Object.entries(eventsGroupedByDay).reduce((acc, [date, events]) => {
+          acc += `<b>${new Intl.DateTimeFormat("ru-RU", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }).format(new Date(date))}</b>`
+
+          acc += "\n"
+
+          acc += events.reduce((acc, event) => {
+            acc += new Intl.DateTimeFormat("ru-RU", {
+              hour: "numeric",
+              minute: "numeric",
+              timeZone: "UTC"
+            }).format(event.date)
+
+            acc += ` - ${event.name}`
+            if (event.description.length) {
+              acc += `\n${event.description}`
+            }
+
+            acc += "\n\n"
+
+            return acc
+          }, "")
+
+
+          return acc
+        }, "")
 
         await ctx.reply(message, {
           parse_mode: "HTML",
