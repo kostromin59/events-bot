@@ -6,6 +6,7 @@ export const enum SessionActions {
 export const enum Actions {
   SHOW_EVENTS = "Мероприятия",
   REGISTER_TO_EVENT = "Записаться",
+  MY_EVENTS = "Мои записи",
   SELECTED_EVENT = "SELECTED_EVENT",
 }
 

@@ -21,7 +21,6 @@ import {
   adminsMenu,
   baseMenu,
   sendContactMenu,
-  showRegisteredEventsMenu,
 } from "./menu";
 import { Readable } from "stream";
 
@@ -45,7 +44,7 @@ export class TelegramBot {
     );
 
     // bot.use(skipPhoneMenu);
-    bot.use(showRegisteredEventsMenu);
+    // bot.use(showRegisteredEventsMenu);
 
     this.bot.catch((err) => {
       const ctx = err.ctx;
@@ -192,10 +191,46 @@ export class TelegramBot {
 
         return ctx.reply(message, {
           parse_mode: "HTML",
-          reply_markup: showRegisteredEventsMenu,
+          // reply_markup: showRegisteredEventsMenu,
         });
       });
 
+    this.bot
+      .filter((ctx) => this.filterAdmins(ctx.from?.id))
+      .hears(Actions.MY_EVENTS, async (ctx) => {
+        if (!ctx.from?.id) return;
+
+        const events = await prisma.userEvent.findMany({
+          where: {
+            user: {
+              telegramId: ctx.from.id.toString(),
+            },
+          },
+          include: {
+            event: true,
+          },
+          orderBy: {
+            event: {
+              date: "asc"
+            }
+          }
+        });
+
+        if (!events.length) {
+          return await ctx.reply("Вы ещё никуда не записаны!");
+        }
+
+        const message = events.reduce((acc, event, index) => {
+          acc += `${index + 1}) <b>${event.event.name}</b> (${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.event.date)})\n`;
+          return acc;
+        }, "Вы записаны на:\n");
+
+        await ctx.reply(message, {
+          parse_mode: "HTML",
+          reply_markup: baseMenu,
+        });
+      });
+ 
     this.bot
       .filter((ctx) => this.filterAdmins(ctx.from?.id))
       .hears(Actions.REGISTER_TO_EVENT, async (ctx) => {
