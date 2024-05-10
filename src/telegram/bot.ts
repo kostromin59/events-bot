@@ -191,7 +191,7 @@ export class TelegramBot {
 
         return ctx.reply(message, {
           parse_mode: "HTML",
-          // reply_markup: showRegisteredEventsMenu,
+          reply_markup: baseMenu
         });
       });
 
