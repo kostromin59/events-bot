@@ -69,27 +69,14 @@ export class TelegramBot {
   async start(notifyMessage?: string) {
     this.bot.start();
 
-    console.log(notifyMessage, "msg")
     if (notifyMessage) {
-      console.log("Notify")
-      const users = await prisma.user.findMany({
-        include: {
-          UserEvent: true
-        }
-      });
+      const users = await prisma.user.findMany();
 
       for (const user of users) {
-        if (user.UserEvent.length !== 0) {
-          try {
-            await prisma.userEvent.deleteMany({
-              where: {
-                userId: user.id 
-              }
-            });
-            await this.bot.api.sendMessage(user.telegramId, notifyMessage)
-          } catch(e) {
-            console.error(e)
-          }
+        try {
+          await this.bot.api.sendMessage(user.telegramId, notifyMessage)
+        } catch(e) {
+          console.error(e)
         }
       }
     }

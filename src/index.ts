@@ -15,7 +15,6 @@ class App {
   }
 
   start() {
-    console.log("start")
     this.telegramBot.start(this.config.notifyMessage);
     cron.schedule("0 * * * *", () => {
       this.telegramBot.notify();

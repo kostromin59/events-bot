@@ -4,6 +4,11 @@ import events from "../events.json";
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.DELETE_ALL) {
+    await prisma.userEvent.deleteMany()
+    await prisma.event.deleteMany()
+  }
+
   for (const event of events) {
     await prisma.event.upsert({
       where: {
