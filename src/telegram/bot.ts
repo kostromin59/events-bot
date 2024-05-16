@@ -466,8 +466,8 @@ export class TelegramBot {
   public async notify() {
     const now = new Date(Date.now());
 
-    // Не выполнять функцию до 17 часов
-    if (now.getHours() < 17) {
+    // Запустить только 21.05.2024 после 17:00 и до 23:00
+    if (now.getDate() !== 21 && now.getMonth() !== 4 && now.getFullYear() !== 2024 && now.getHours() < 17 && now.getHours() > 23) {
       return;
     }
 
@@ -532,7 +532,9 @@ export class TelegramBot {
             return acc
           }, "")
 
-          await this.bot.api.sendMessage(user.telegramId, `Приглашаем вас 22-23 мая на Дни дизайна в Перми. Выставка «Знай Наших!» состоится на площадке конгрессно-выставочного центра "PermExpo" в рамках краевого форума "Дни Пермского бизнеса. Расширяя границы Пермского края" по адресу: ул. Шоссе Космонавтов, 59. Программа и регистрация: https://archibookperm.ru/ До встречи!\n\nВаши записи: ${message}`)
+          await this.bot.api.sendMessage(user.telegramId,
+            `Приглашаем вас <b>22-23 мая</b> на Дни дизайна в Перми. Выставка «Знай Наших!» состоится на площадке конгрессно-выставочного центра "PermExpo" в рамках краевого форума "Дни Пермского бизнеса. Расширяя границы Пермского края" <b>по адресу: ул. Шоссе Космонавтов, 59</b>. Программа и регистрация: https://archibookperm.ru/ До встречи!\n\n${message ? `Ваши записи:\n${message}` : ""}`,
+            { parse_mode: "HTML" })
           await prisma.userEvent.updateMany({
             data: {
               isNotified: true
@@ -546,37 +548,5 @@ export class TelegramBot {
         }
       }
     }
-
-    // const events = await prisma.userEvent.findMany({
-    //   where: {
-    //     isNotified: false,
-    //     event: {
-    //       date: {
-    //         // 31 час, потому что нужно за весь следующий день, а проверка начинается с 17 часов
-    //         lt: new Date(now.getTime() + 1000 * 60 * 60 * 31),
-    //         gt: now,
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     event: true,
-    //     user: true,
-    //   },
-    // });
-    //
-    // events.forEach(async (event) => {
-    //   await this.bot.api.sendMessage(
-    //     event.user.telegramId,
-    //     `Вы записаны на мероприятие "${event.event.name}", которое будет проходить ${new Intl.DateTimeFormat("ru-RU", DateFormat).format(event.event.date)}. Ждём вас!`,
-    //   );
-    //   await prisma.userEvent.update({
-    //     where: {
-    //       id: event.id,
-    //     },
-    //     data: {
-    //       isNotified: true,
-    //     },
-    //   });
-    // });
   }
 }
