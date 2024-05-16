@@ -467,7 +467,7 @@ export class TelegramBot {
     const now = new Date(Date.now());
 
     // Запустить только 21.05.2024 после 17:00 и до 23:00
-    if (now.getDate() !== 21 && now.getMonth() !== 4 && now.getFullYear() !== 2024 && now.getHours() < 17 && now.getHours() > 23) {
+    if (now.getDate() !== 21 || now.getMonth() !== 4 || now.getFullYear() !== 2024 || now.getHours() < 17 || now.getHours() > 23) {
       return;
     }
 

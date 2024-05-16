@@ -19,7 +19,6 @@ class App {
     cron.schedule("0 * * * *", () => {
       this.telegramBot.notify();
     });
-    this.telegramBot.notify()
   }
 }
 
