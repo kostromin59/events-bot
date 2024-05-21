@@ -18,6 +18,7 @@ model User {
   telegramId String      @unique
   fio        String
   phone      String?
+  isNotified Boolean @default(false)
   UserEvent  UserEvent[]
 }
 
@@ -31,7 +32,6 @@ model Event {
 
 model UserEvent {
   id         Int     @id @default(autoincrement())
-  isNotified Boolean @default(false)
   userId     Int
   eventId    Int
   user       User    @relation(fields: [userId], references: [id])

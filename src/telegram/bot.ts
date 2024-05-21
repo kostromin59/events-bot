@@ -487,7 +487,7 @@ export class TelegramBot {
     });
 
     for (const user of users) {
-      if (!user.UserEvent.some((event) => event.isNotified)) {
+      if (!user.isNotified) {
         try {
           const eventsGroupedByDay = user.UserEvent.reduce((acc, { event }) => {
             const date = event.date.toISOString().split('T')[0];
@@ -534,15 +534,16 @@ export class TelegramBot {
 
           await this.bot.api.sendMessage(user.telegramId,
             `Приглашаем вас <b>22-23 мая</b> на Дни дизайна в Перми. Выставка «Знай Наших!» состоится на площадке конгрессно-выставочного центра "PermExpo" в рамках краевого форума "Дни Пермского бизнеса. Расширяя границы Пермского края" <b>по адресу: ул. Шоссе Космонавтов, 59</b>. Программа и регистрация: https://archibookperm.ru/ До встречи!\n\n${message ? `Ваши записи:\n${message}` : ""}`,
-            { parse_mode: "HTML" })
-          await prisma.userEvent.updateMany({
+            { parse_mode: "HTML" });
+
+          await prisma.user.update({
             data: {
-              isNotified: true
+              isNotified: true,
             },
             where: {
-              userId: user.id
+              id: user.id
             }
-          })
+          });
         } catch {
           console.log("Ошибка уведомления")
         }
