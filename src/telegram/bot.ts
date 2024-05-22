@@ -466,11 +466,6 @@ export class TelegramBot {
   public async notify() {
     const now = new Date(Date.now());
 
-    // Запустить только 21.05.2024 после 17:00 и до 23:00
-    if (now.getDate() !== 21 || now.getMonth() !== 4 || now.getFullYear() !== 2024 || now.getHours() < 17 || now.getHours() > 23) {
-      return;
-    }
-
     const users = await prisma.user.findMany({
       include: {
         UserEvent: {
@@ -487,7 +482,6 @@ export class TelegramBot {
     });
 
     for (const user of users) {
-      if (!user.isNotified) {
         try {
           const eventsGroupedByDay = user.UserEvent.reduce((acc, { event }) => {
             const date = event.date.toISOString().split('T')[0];
@@ -533,21 +527,11 @@ export class TelegramBot {
           }, "")
 
           await this.bot.api.sendMessage(user.telegramId,
-            `Приглашаем вас <b>22-23 мая</b> на Дни дизайна в Перми. Выставка «Знай Наших!» состоится на площадке конгрессно-выставочного центра "PermExpo" в рамках краевого форума "Дни Пермского бизнеса. Расширяя границы Пермского края" <b>по адресу: ул. Шоссе Космонавтов, 59</b>. Программа и регистрация: https://archibookperm.ru/ До встречи!\n\n${message ? `Ваши записи:\n${message}` : ""}`,
+            `Добрый день, Вы зарегистрировались 22-23 на дни дизайна в Перми. выставка "Знай наших!", которая началась на площадке «PermExpo» по адресу: ш. Космонавтов, 59\nПрограмма и регистрация на сайте archibookperm.ru\n\n${message ? `Ваши записи:\n${message}` : ""}Ждём вас!`,
             { parse_mode: "HTML" });
-
-          await prisma.user.update({
-            data: {
-              isNotified: true,
-            },
-            where: {
-              id: user.id
-            }
-          });
         } catch {
           console.log("Ошибка уведомления")
         }
       }
-    }
   }
 }

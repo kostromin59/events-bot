@@ -1,6 +1,5 @@
 import { TelegramBot } from "./telegram";
 import { Config } from "./utils";
-import cron from "node-cron";
 
 class App {
   private readonly telegramBot: TelegramBot;
@@ -16,9 +15,7 @@ class App {
 
   start() {
     this.telegramBot.start(this.config.notifyMessage);
-    cron.schedule("0 * * * *", () => {
-      this.telegramBot.notify();
-    });
+    this.telegramBot.notify()
   }
 }
 
